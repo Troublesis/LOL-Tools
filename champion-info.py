@@ -104,4 +104,4 @@ print(champion_dict_url)
 with request.urlopen(champion_dict_url) as response:
     source = response.read()
     champion_detail = json.loads(source)
-print(champion_detail) 
+print(champion_detail)
