@@ -52,7 +52,7 @@ def champion_info():
         print("Spell cooldown per level: " + str(champion_spells[spell]["cooldown"]))
         print("Spell cost per level    : " + str(champion_spells[spell]["costBurn"]))
         print("Spell range per level   : " + str(champion_spells[spell]["range"]) + "\n")
-        # print("\n")
+        # print("\n\n")
 
 
 while True:
