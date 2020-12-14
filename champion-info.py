@@ -1,5 +1,6 @@
 import urllib.request as request
 import json
+import re
 
 def champion_info():
     # setup initial lol version check url
@@ -25,7 +26,11 @@ def champion_info():
         return list(dict.keys())
 
     champion_list = getList(champion_dict)
-    print(champion_list)
+    # print(champion_list)
+    index = 0
+    for champion in champion_list:
+        print(str(index) + ": " + champion)
+        index += 1
 
     print("\nCurrent League of Legends version is: " + current_version)
     # get champion info
@@ -34,8 +39,11 @@ def champion_info():
         while True:
             try:
                 # todo: smart champion name input method
-                champion_name = input("Please input champion name: ")
-                # champion_name = input("Please input champion name: ").capitalize()
+                champion_name = input("Please input champion name or index number: ").capitalize()
+                if not re.search('[a-zA-Z]', champion_name):
+                    champion_name = champion_list[int(champion_name)]
+
+                print("Champion name: ", champion_name)
                 champion_dict_url = "http://ddragon.leagueoflegends.com/cdn/" + current_version + "/data/en_US/champion/" + champion_name + ".json"
                 # print(champion_dict_url)
                 with request.urlopen(champion_dict_url) as response:
@@ -44,7 +52,7 @@ def champion_info():
                 champion_data = champion_detail["data"][champion_name]
                 break
             except:
-                print("Please enter correct champion name.")
+                print("Please enter correct champion name or index number.")
 
         champion_stats = champion_detail["data"][champion_name]["stats"]
         # print(champion_stats)
