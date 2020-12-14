@@ -29,32 +29,38 @@ def champion_info():
 
     print("\nCurrent League of Legends version is: " + current_version)
     # get champion info
-    champion_name = input("Please input champion name: ").capitalize()
-    champion_dict_url = "http://ddragon.leagueoflegends.com/cdn/" + current_version + "/data/en_US/champion/" + champion_name + ".json"
-    # print(champion_dict_url)
 
-    with request.urlopen(champion_dict_url) as response:
-        source = response.read()
-        champion_detail = json.loads(source)
-    champion_data = champion_detail["data"][champion_name]
+    while True:
+        while True:
+            try:
+                # todo: smart champion name input method
+                champion_name = input("Please input champion name: ")
+                # champion_name = input("Please input champion name: ").capitalize()
+                champion_dict_url = "http://ddragon.leagueoflegends.com/cdn/" + current_version + "/data/en_US/champion/" + champion_name + ".json"
+                # print(champion_dict_url)
+                with request.urlopen(champion_dict_url) as response:
+                    source = response.read()
+                    champion_detail = json.loads(source)
+                champion_data = champion_detail["data"][champion_name]
+                break
+            except:
+                print("Please enter correct champion name.")
 
-    champion_stats = champion_detail["data"][champion_name]["stats"]
-    # print(champion_stats)
+        champion_stats = champion_detail["data"][champion_name]["stats"]
+        # print(champion_stats)
 
-    champion_spells = champion_detail["data"][champion_name]["spells"]
-    print("===Champion Info===\n")
-    # todo: add champion stats info, also check if more level info need to be added
-    # print("\n" + str(champion_stats) + "\n")
+        champion_spells = champion_detail["data"][champion_name]["spells"]
+        print("===Champion Info===\n")
+        # todo: add champion stats info, also check if more level info need to be added
+        # print("\n" + str(champion_stats) + "\n")
 
-    spell_list = ["Q", "W", "E", "R"]
-    for spell in range(4):
-        print(spell_list[spell] + ": " + str(champion_spells[spell]["id"]) + " - " + str(champion_spells[spell]["name"]))
-        print("CD   : " + str(champion_spells[spell]["cooldown"]))
-        print("Cost : " + str(champion_spells[spell]["costBurn"]))
-        print("Range: " + str(champion_spells[spell]["range"]) + "\n")
-        # print("\n\n")
+        spell_list = ["Q", "W", "E", "R"]
+        for spell in range(4):
+            print(spell_list[spell] + ": " + str(champion_spells[spell]["id"]) + " - " + str(champion_spells[spell]["name"]))
+            print("CD   : " + str(champion_spells[spell]["cooldown"]))
+            print("Cost : " + str(champion_spells[spell]["costBurn"]))
+            print("Range: " + str(champion_spells[spell]["range"]) + "\n")
+            # print("\n\n")
 
 
-while True:
-    champion_info()
-    repeat = input("Press enter to select a new champion.")
+champion_info()
