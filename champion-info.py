@@ -49,9 +49,9 @@ def champion_info():
     spell_list = ["Q", "W", "E", "R"]
     for spell in range(4):
         print(spell_list[spell] + ": " + str(champion_spells[spell]["id"]) + " - " + str(champion_spells[spell]["name"]))
-        print("Spell cooldown per level: " + str(champion_spells[spell]["cooldown"]))
-        print("Spell cost per level    : " + str(champion_spells[spell]["costBurn"]))
-        print("Spell range per level   : " + str(champion_spells[spell]["range"]) + "\n")
+        print("CD   : " + str(champion_spells[spell]["cooldown"]))
+        print("Cost : " + str(champion_spells[spell]["costBurn"]))
+        print("Range: " + str(champion_spells[spell]["range"]) + "\n")
         # print("\n\n")
 
 
