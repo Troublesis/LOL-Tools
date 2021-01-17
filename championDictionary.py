@@ -12,15 +12,21 @@
 
 import os
 champion_dict = {}
-championIconFolder = os.path.dirname(os.path.abspath( __file__ ))+'/'+'Champion Icon/'
-championIconFolder = championIconFolder.replace('\\','/')
+# path = os.path.join(os.path.abspath(__file__), 'Champion Icon')
+championIconFolder = os.path.dirname(os.path.abspath(__file__))
+championIconFolder = championIconFolder + "/Champion Icon/"
+# championIconFolder = championIconFolder.replace('\\','/')
 
 championNameList = os.listdir(championIconFolder)
 # print(championIconFolder)
 
 for championName in championNameList:
-  skinList = os.listdir(championIconFolder+championName)
-  champion_dict.update({championName:skinList})
-  # print(skinList)
+  try:
+    skinList = os.listdir(os.path.join(championIconFolder, championName))
+    champion_dict.update({championName:skinList})
+    # print(skinList)
+  except:
+    continue
 
 # print(championDict)
+# /Volumes/Google/Bamboo/Cloud Doc/Code/Python/PyCharmProjects/LOL-Tools/Champion Icon/Aatrox

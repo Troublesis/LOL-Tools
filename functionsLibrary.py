@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import time
 
@@ -9,7 +10,6 @@ from PIL import Image
 from pynput.keyboard import Key, Controller
 
 from championDictionary import champion_dict
-
 
 '''
 ===================================================================================================
@@ -22,18 +22,17 @@ from championDictionary import champion_dict
 ===================================================================================================
 '''
 
-def lolDetectGameMode(source,videoName,frameImagePath):
 
+def lolDetectGameMode(source, videoName, frameImagePath):
     print('===> Checking GameMode')
-    
-    cap= cv2.VideoCapture(source+videoName)
+
+    cap = cv2.VideoCapture(frameImagePath)
     ret, frame = cap.read()
 
-    cv2.imwrite(frameImagePath,frame)
+    cv2.imwrite(frameImagePath, frame)
 
     cap.release()
-    cv2.destroyAllWindows()  
-
+    cv2.destroyAllWindows()
 
     img = cv2.imread(frameImagePath)
 
@@ -41,8 +40,8 @@ def lolDetectGameMode(source,videoName,frameImagePath):
     pixelColor = [54, 77, 30]  # RGB
     #  Pixel RGB tolerance
     diff = 20
-    boundaries = [([pixelColor[2]-diff, pixelColor[1]-diff, pixelColor[0]-diff],
-                [pixelColor[2]+diff, pixelColor[1]+diff, pixelColor[0]+diff])]
+    boundaries = [([pixelColor[2] - diff, pixelColor[1] - diff, pixelColor[0] - diff],
+                   [pixelColor[2] + diff, pixelColor[1] + diff, pixelColor[0] + diff])]
     # in order BGR as opencv represents images as numpy arrays in reverse order
 
     for (lower, upper) in boundaries:
@@ -51,10 +50,11 @@ def lolDetectGameMode(source,videoName,frameImagePath):
         mask = cv2.inRange(img, lower, upper)
         output = cv2.bitwise_and(img, img, mask=mask)
 
-        ratio_pixelColor = cv2.countNonZero(mask)/(img.size/3)
-        pixelColorPercentage = np.round(ratio_pixelColor*100, 2)
+        ratio_pixelColor = cv2.countNonZero(mask) / (img.size / 3)
+        pixelColorPercentage = np.round(ratio_pixelColor * 100, 2)
         print('===> grass pixel percentage: ', pixelColorPercentage)
     return pixelColorPercentage
+
 
 ############################### FUNCTION END ###############################
 
@@ -74,29 +74,33 @@ def lolDetectGameMode(source,videoName,frameImagePath):
 ===================================================================================================
 '''
 
-def imageCrop(sourceImageFilePath,sourceFolderPath, leftPercent, topPercent, rightPercent, bottomPercent,resultImageFileName):
-   
+
+def imageCrop(sourceImageFilePath, sourceFolderPath, leftPercent, topPercent, rightPercent, bottomPercent,
+              resultImageFileName):
     # Opens a image in RGB mode
-    frameImage = Image.open(sourceImageFilePath)  
+    frameImage = Image.open(sourceImageFilePath)
     # Size of the image in pixels (size of original image)
     # (This is not mandatory) 
-    width, height = frameImage.size 
+    width, height = frameImage.size
 
     # Setting the points for cropped image 
-    left = leftPercent*width
-    top = topPercent*height
-    right = rightPercent*width
-    bottom = bottomPercent*height
+    left = leftPercent * width
+    top = topPercent * height
+    right = rightPercent * width
+    bottom = bottomPercent * height
     # print(left,top,right,bottom)
-    
+
     # Cropped image of above dimension 
     # (It will not change original image)
     croppedImage = frameImage.crop((left, top, right, bottom))
-    
+
     # Shows the image in image viewer 
     # im1.show() 
+    saved_img_path = os.path.join(sourceFolderPath, resultImageFileName)
+    print('===>img saved: %s' % saved_img_path)
+    return croppedImage.save(saved_img_path, 'JPEG')
 
-    return croppedImage.save(sourceFolderPath+resultImageFileName, 'JPEG')
+
 ############################### FUNCTION END ###############################
 
 '''
@@ -110,49 +114,51 @@ def imageCrop(sourceImageFilePath,sourceFolderPath, leftPercent, topPercent, rig
 ===================================================================================================
 '''
 
-def lolDetectChampion(mainImage, championIconFolder, source, threshold, gameMode, championName, championIconSkinName, gameModeDestination, videoFolderName):
 
+def lolDetectChampion(mainImage, championIconFolder, source, threshold, gameMode, championName, championIconSkinName,
+                      gameModeDestination, videoFolderName):
     # set champion icon file path
-    championIconPath = championIconFolder+championName+'/'+championIconSkinName
-
-    # Read the main image 
+    championIconPath = os.path.join(championIconFolder, championName, championIconSkinName)
+    print('===>icon path: %s' % championIconPath)
+    # Read the main image
+    print('===>main image: %s' % mainImage)
     img_rgb = cv2.imread(mainImage)
 
     # Convert it to grayscale 
     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
-    
+
     # Read the template 
-    template = cv2.imread(championIconPath,0)
+    template = cv2.imread(championIconPath, 0)
     # Store width and height of template in w and h 
     w, h = template.shape[::-1]
-    
+
     # Perform match operations. 
-    res = cv2.matchTemplate(img_gray,template,cv2.TM_CCOEFF_NORMED) 
-    
+    res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
+
     # Specify a threshold 
     # threshold = 0.7
-    
+
     # Store the coordinates of matched area in a numpy array 
-    loc = np.where( res >= threshold)  
-    
+    loc = np.where(res >= threshold)
+
     # Draw a rectangle around the matched region. 
     counter = 0
-    for pt in zip(*loc[::-1]): 
-        cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0,255,255), 2)
+    for pt in zip(*loc[::-1]):
+        cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0, 255, 255), 2)
         counter += 1
     # Show the final image with the matched area. 
     # cv2.imshow('Detected',img_rgb) 
 
     # when the match champion found ===> store the file
     if counter > 0:
-        dest_folder = gameModeDestination+championName+'/'+videoFolderName
+        dest_folder = gameModeDestination + championName + '/' + videoFolderName
         dest = shutil.move(source, dest_folder)
         print('===> This champion is: ', championName)
         print('===> Folder moved to: ', dest_folder)
         print('Done\n\n-------------------------')
 
-        return counter        
-    else: 
+        return counter
+    else:
         return counter
     ##################################################################
 
@@ -167,11 +173,17 @@ def overwolf_lol_videos_sort():
     # input the root folder path of where you store all of your recorded League of Legends videos
     # root_folder = input('Please enter the source folder path (Sample: w:/Videos/Video Records/Games/Overwolf/Game Summary/League of Legends/): ')
     # enable the following line and comment the upper line if you don't want to enter the folder path every time
-    root_folder = 'F:/bambo/Videos/Overwolf/Game Summary/League of Legends/'
+    # todo: change folder
+    # root_folder = 'F:/Videos/Overwolf/Outplayed/League of Legends/'
+    root_folder = "/Volumes/F/Videos/Overwolf/Outplayed/League of Legends/"
     # root_folder = 'w:/Videos/Video Records/Games/Overwolf/Game Summary/League of Legends/'
     # sort_folder = input('Please enter the new folder path where you want to store League of Legends Game Videos (Sample: w:/Videos/Video Records/Games/Overwolf/Game Summary/Sorted/): ')
+    # sort_folder = 'F:/bambo/Videos/Overwolf/Game Summary/League of Legends Sorted/'
+    try:
+        sort_folder = os.mkdir(root_folder + "Sorted/")
+    except:
+        sort_folder = root_folder + "Sorted/"
 
-    sort_folder = 'F:/bambo/Videos/Overwolf/Game Summary/League of Legends Sorted/'
     # sort_folder = 'w:/Videos/Video Records/Games/Overwolf/Game Summary/'
     normal_game_mode_destination = sort_folder + 'Normal/'
     aram_game_mode_destination = sort_folder + 'ARAM/'
@@ -194,135 +206,139 @@ def overwolf_lol_videos_sort():
     # loop to check each folder inside the root folder
     for folderName in folderList:
         # if '.' not in folderName:
+        folder_name_matched = re.search(
+            r"^League of Legends_[0-9]{0,2}-[0-9]{0,2}-[0-9]{0,4}_[0-9]{0,2}-[0-9]{0,2}-[0-9]{0,2}-[0-9]{0,3}$",
+            folderName)
+        if folder_name_matched is not None:
+            # print('===> folder name:', f)
+            file_list = os.listdir(os.path.join(root_folder, folderName))
 
-        # get the folder path of each folder inside the root folder
-        source = root_folder + folderName + '/'
-        print('===> Checking folder: ' + source)
+            # get the folder path of each folder inside the root folder
 
-        # todo: still working on these lines... need to fix if there was no file found in the selected folder
-        # select a video inside the folder
+            # todo: still working on these lines... need to fix if there was no file found in the selected folder
+            # select a video inside the folder
 
-        file_list = os.listdir(source)
-        # print(file_list)
-        video_name = 0
-        for fileName in file_list:
-            if '.mp4' in fileName:
-                video_name = fileName
-                print('video_name' + video_name)
-                break
+            # file_list = os.listdir(video_folder)
+            # print(file_list)
+            # video_name = 0
+            for fileName in file_list:
+                if '.mp4' in fileName:
+                    video_name = fileName
+                    print('video_name: ' + video_name)
 
-        frame_image_name = 'frame.jpg'
-        video_frame_file_path = source + frame_image_name
-        try:
-            pixel_color_percentage = lolDetectGameMode(source, video_name, video_frame_file_path)
-        except WindowsError:
-            break
+                    frame_image_name = 'frame.jpg'
+                    source = os.path.join(root_folder, folderName)
+                    video_frame_file_path = os.path.join(source,frame_image_name)
+                    print(video_frame_file_path)
+                    pixel_color_percentage = lolDetectGameMode(source, video_name, video_frame_file_path)
 
-        champion_icon_file_name = 'championIcon.jpg'
-        champion_icon_file_path = source + champion_icon_file_name
-        champion_icon_area_file_name = 'championIconArea.jpg'
-        champion_icon_area_file_path = source + champion_icon_file_name
-        print('===> championIcon.jpg stored at: ' + champion_icon_file_path)
-        print('')
-        # get the video frame image file path
 
-        # set the crop coordinates in order to crop a champion icon image from the captured champion frame
-        left_percent = 0.2
-        top_percent = 0.85
-        right_percent = 0.4
-        bottom_percent = 1
+                    champion_icon_file_name = 'championIcon.jpg'
+                    champion_icon_file_path = os.path.join(source, champion_icon_file_name)
+                    champion_icon_area_file_name = 'championIconArea.jpg'
+                    champion_icon_area_file_path = os.path.join(source, champion_icon_file_name)
+                    print('===> championIcon.jpg stored at: ' + champion_icon_file_path)
+                    print('')
+                    # get the video frame image file path
 
-        # lolChampionIconCrop will crop a champion icon image from frame.jpg and save it in video folder
-        imageCrop(video_frame_file_path, source, left_percent, top_percent, right_percent, bottom_percent,
-                  champion_icon_area_file_name)
-        left = 385 / 1280
-        top = 643 / 720
-        right = 433 / 1280
-        bottom = 683 / 720
+                    # set the crop coordinates in order to crop a champion icon image from the captured champion frame
+                    left_percent = 0.2
+                    top_percent = 0.85
+                    right_percent = 0.4
+                    bottom_percent = 1
 
-        imageCrop(video_frame_file_path, source, left, top, right, bottom, champion_icon_file_name)
+                    # lolChampionIconCrop will crop a champion icon image from frame.jpg and save it in video folder
+                    imageCrop(video_frame_file_path, source, left_percent, top_percent, right_percent, bottom_percent,
+                              champion_icon_area_file_name)
+                    left = 422 / 1280
+                    top = 658 / 720
+                    right = 457 / 1280
+                    bottom = 688 / 720
 
-        # set initial value of variable championFound as 0 for break a loop when champion detected
-        championFound = 0
-        # set initial value of champion skin icon index as 0 for counting how many skins for each champion stored in our champion dictionary
-        champion_skin_icon_index = 0
-        # get the total number of champion skins
-        # total_number_of_skins = len(champion_dict)
+                    imageCrop(video_frame_file_path, source, left, top, right, bottom, champion_icon_file_name)
 
-        # loop to check all of champion name in champion dictionary
-        for champion_name in champion_dict:
-            # get the current name of champion skin in the loop
-            # name_of_champion_skins = len(champion_dict[champion_name])
-            # loop to check all of skins for each champion
-            for skin in champion_dict[champion_name]:
-                # when champion is found, break the loop
-                if championFound > 0:
-                    # championFound = 0
-                    print('current skin is: ', skin)
-                    file_moved += 1
-                    break
-                # print current comparing skin name
-                skin_name = champion_dict[champion_name][champion_skin_icon_index]
-                print('===> Comparing ' + skin_name)
-                # when game mode is normal
-                if pixel_color_percentage > 2:
-                    # set normal game video store location
-                    # normal_game_mode_destination = 'F:/bambo/Videos/Overwolf/Game Summary/Normal/'
-                    # run function lolDetectChampion
-                    championFound = lolDetectChampion(champion_icon_area_file_path, champion_icon_folder,
-                                                      source, 0.9,
-                                                      'normal', champion_name, skin_name,
-                                                      normal_game_mode_destination, folderName)
-                    # when game mode is aram
+                    # set initial value of variable championFound as 0 for break a loop when champion detected
+                    championFound = 0
+                    # set initial value of champion skin icon index as 0 for counting how many skins for each champion stored in our champion dictionary
+                    champion_skin_icon_index = 0
+                    # get the total number of champion skins
+                    # total_number_of_skins = len(champion_dict)
 
-                elif pixel_color_percentage < 2:
-                    # set normal game video store location
-                    # aram_game_mode_destination = 'F:/bambo/Videos/Overwolf/Game Summary/ARAM/'
-                    # run function lolDetectChampion
-                    championFound = lolDetectChampion(champion_icon_area_file_path, champion_icon_folder,
-                                                      source, 0.9,
-                                                      'aram', champion_name, skin_name,
-                                                      aram_game_mode_destination,
-                                                      folderName)
+                    # loop to check all of champion name in champion dictionary
+                    for champion_name in champion_dict:
+                        # get the current name of champion skin in the loop
+                        # name_of_champion_skins = len(champion_dict[champion_name])
+                        # loop to check all of skins for each champion
+                        for skin in champion_dict[champion_name]:
+                            # when champion is found, break the loop
+                            if championFound > 0:
+                                # championFound = 0
+                                print('current skin is: ', skin)
+                                file_moved += 1
+                                break
+                            # print current comparing skin name
+                            skin_name = champion_dict[champion_name][champion_skin_icon_index]
+                            print('===> Comparing ' + skin_name)
+                            # when game mode is normal
+                            if pixel_color_percentage > 2:
+                                # set normal game video store location
+                                # normal_game_mode_destination = 'F:/bambo/Videos/Overwolf/Game Summary/Normal/'
+                                # run function lolDetectChampion
+                                championFound = lolDetectChampion(champion_icon_area_file_path, champion_icon_folder,
+                                                                  source, 0.9,
+                                                                  'normal', champion_name, skin_name,
+                                                                  normal_game_mode_destination, folderName)
+                                # when game mode is aram
 
-                else:
-                    print('===> Game Mode Undefined')
-                    champion_not_found += 1
-                    break
-                # todo: these lines might have some issue.
-                # when all of champion skins have been checked move the undefined champion icon
-                if champion_name == list(champion_dict.keys())[-1]:
-                    if skin_name == champion_dict[list(champion_dict.keys())[-1]][len(champion_dict[champion_name]) - 1]:
-                        undefinedChampionIconFolder = sort_folder
-                        # undefinedChampionIconFolder = champion_icon_folder
-                        try:
-                            os.rename(champion_icon_file_path,
-                                      undefinedChampionIconFolder + 'undefinedChampion' + str(
-                                          undefinedChampionIndex) + '.jpg')
-                            os.rename(video_frame_file_path,
-                                      undefinedChampionIconFolder + 'undefinedChampionFrame' + str(
-                                          undefinedChampionIndex) + '.jpg')
-                            print('===> Undefined champion icon moved to: ', champion_icon_folder)
-                            print('\n\n------------------------->')
+                            elif pixel_color_percentage < 2:
+                                # set normal game video store location
+                                # aram_game_mode_destination = 'F:/bambo/Videos/Overwolf/Game Summary/ARAM/'
+                                # run function lolDetectChampion
+                                championFound = lolDetectChampion(champion_icon_area_file_path, champion_icon_folder,
+                                                                  source, 0.9,
+                                                                  'aram', champion_name, skin_name,
+                                                                  aram_game_mode_destination,
+                                                                  folderName)
 
-                        except WindowsError:
-                            os.remove(undefinedChampionIconFolder + 'undefinedChampion' + str(
-                                undefinedChampionIndex) + '.jpg')
-                            os.remove(undefinedChampionIconFolder + 'undefinedChampionFrame' + str(
-                                undefinedChampionIndex) + '.jpg')
-                            os.rename(champion_icon_file_path,
-                                      undefinedChampionIconFolder + 'undefinedChampion' + str(
-                                          undefinedChampionIndex) + '.jpg')
-                            os.rename(video_frame_file_path,
-                                      undefinedChampionIconFolder + 'undefinedChampionFrame' + str(
-                                          undefinedChampionIndex) + '.jpg')
-                        undefinedChampionIndex += 1
-                        print('===> Undefined champion icon moved to: ', champion_icon_folder)
-                        print('\n\n------------------------->')
+                            else:
+                                print('===> Game Mode Undefined')
+                                champion_not_found += 1
+                                break
+                            # todo: these lines might have some issue.
+                            # when all of champion skins have been checked move the undefined champion icon
+                            if champion_name == list(champion_dict.keys())[-1]:
+                                if skin_name == champion_dict[list(champion_dict.keys())[-1]][
+                                    len(champion_dict[champion_name]) - 1]:
+                                    undefinedChampionIconFolder = sort_folder
+                                    # undefinedChampionIconFolder = champion_icon_folder
+                                    try:
+                                        os.rename(champion_icon_file_path,
+                                                  undefinedChampionIconFolder + 'undefinedChampion' + str(
+                                                      undefinedChampionIndex) + '.jpg')
+                                        os.rename(video_frame_file_path,
+                                                  undefinedChampionIconFolder + 'undefinedChampionFrame' + str(
+                                                      undefinedChampionIndex) + '.jpg')
+                                        print('===> Undefined champion icon moved to: ', champion_icon_folder)
+                                        print('\n\n------------------------->')
 
-                champion_skin_icon_index += 1
+                                    except WindowsError:
+                                        os.remove(undefinedChampionIconFolder + 'undefinedChampion' + str(
+                                            undefinedChampionIndex) + '.jpg')
+                                        os.remove(undefinedChampionIconFolder + 'undefinedChampionFrame' + str(
+                                            undefinedChampionIndex) + '.jpg')
+                                        os.rename(champion_icon_file_path,
+                                                  undefinedChampionIconFolder + 'undefinedChampion' + str(
+                                                      undefinedChampionIndex) + '.jpg')
+                                        os.rename(video_frame_file_path,
+                                                  undefinedChampionIconFolder + 'undefinedChampionFrame' + str(
+                                                      undefinedChampionIndex) + '.jpg')
+                                    undefinedChampionIndex += 1
+                                    print('===> Undefined champion icon moved to: ', champion_icon_folder)
+                                    print('\n\n------------------------->')
 
-            champion_skin_icon_index = 0
+                            champion_skin_icon_index += 1
+
+                        champion_skin_icon_index = 0
     print('Total number of file moved: ', file_moved)
     print('Total number of champion icon undefined: ', champion_not_found)
 
@@ -332,6 +348,7 @@ def takeScreenShot(screenshotsFolderPath, screenshotName):
     screenshotsFolderPath = screenshotsFolderPath.replace('\\', '/')
     screenshotFilePath = screenshotsFolderPath + screenshotName
     my_screenshot.save(screenshotFilePath)
+
 
 def compareImage(mainImageFilePath, templateImageFilePath, threshold):
     # Read the main image
@@ -367,7 +384,6 @@ def compareImage(mainImageFilePath, templateImageFilePath, threshold):
 
 
 def lol_call_position():
-
     print('''
     ===================================================================================================
          This is a little script which will automatically call league of legends position for you                                                                       
