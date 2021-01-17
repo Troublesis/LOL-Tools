@@ -13,6 +13,8 @@ def menu():
         choice = int(input('Select a number to choose the function：'))
         if choice == 1:
             overwolf_lol_videos_sort()
+            start = time.time()
+            print("花费时间: %s" % (time.time() - start))
         elif choice == 2:
             lol_call_position()
         elif choice == 3:

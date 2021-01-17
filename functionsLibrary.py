@@ -26,7 +26,7 @@ from championDictionary import champion_dict
 def lolDetectGameMode(source, videoName, frameImagePath):
     print('===> Checking GameMode')
 
-    cap = cv2.VideoCapture(frameImagePath)
+    cap = cv2.VideoCapture(os.path.join(source, videoName))
     ret, frame = cap.read()
 
     cv2.imwrite(frameImagePath, frame)
